@@ -186,19 +186,38 @@ func TestBotOpenedPRActivityGoesToMaintenance(t *testing.T) {
 	}
 }
 
-func TestMaintenanceCountsEachActionButNotApprovalCommands(t *testing.T) {
+func TestMaintenanceCountsEachActionIncludingApprovalCommands(t *testing.T) {
 	deps := func(p *store.PullRequest) { p.Title = "chore(deps): bump x" }
-	_, people, _ := compute(t,
+	_, people, dropped := compute(t,
 		pr(1, "dependabot", deps,
 			review("dave", "COMMENTED", inside, 1, ""),
 			review("dave", "COMMENTED", inside, 1, ""),
 			review("dave", "APPROVED", inside, 0, ""),
-			comment("carol", "/lgtm", inside)))
+			comment("carol", "/lgtm", inside),
+			comment("carol", "/lgtm", inside),
+			comment("erin", "thanks", inside)),
+		pr(2, "dependabot", deps,
+			comment("frank", "/approve", inside.Add(-time.Hour)),
+			botMerge("prow-bot")),
+		pr(3, "grace", func(p *store.PullRequest) { p.HeadRefName = "cherry-pick-1-to-release-1.0" },
+			comment("grace", "/lgtm", inside),
+			comment("heidi", "/lgtm cancel", inside)))
 	if p := people["dave"]; p.Maintenance != 3 || p.Reviewed != 0 {
 		t.Errorf("dave = %+v, want each of the 3 reviews as maintenance", p)
 	}
-	if _, ok := people["carol"]; ok {
-		t.Errorf("carol = %+v, want an approval command on a maintenance PR left out", people["carol"])
+	if p := people["carol"]; p.Maintenance != 2 || p.Reviewed != 0 || p.Total != 0 {
+		t.Errorf("carol = %+v, want each /lgtm as maintenance and nothing in the total", p)
+	}
+	if p := people["frank"]; p.Maintenance != 2 || p.Merged != 0 || p.Total != 0 {
+		t.Errorf("frank = %+v, want /approve and the merge it commanded as maintenance", p)
+	}
+	for _, login := range []string{"erin", "grace", "heidi"} {
+		if p, ok := people[login]; ok {
+			t.Errorf("%s = %+v, want a plain comment, the author's own /lgtm and /lgtm cancel left out", login, p)
+		}
+	}
+	if dropped[MaintenanceComments] != 2 || dropped[OwnPRComments] != 1 {
+		t.Errorf("maintenance comments = %d, own PR comments = %d, want 2 and 1", dropped[MaintenanceComments], dropped[OwnPRComments])
 	}
 }
 

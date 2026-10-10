@@ -300,6 +300,8 @@ func (t *tally) add(pr store.PullRequest) {
 			switch {
 			case login == author:
 				t.drop(OwnPRComments, login)
+			case !human && t.c.isApproval(e.Body):
+				t.drop(MaintenanceReviews, login)
 			case !human:
 				t.drop(MaintenanceComments, login)
 			case t.c.isApproval(e.Body):

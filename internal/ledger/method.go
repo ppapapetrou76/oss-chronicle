@@ -35,7 +35,7 @@ var Units = []Unit{
 	{Key: "triaged", Label: "Triage",
 		Text: "Closes of someone else's pull request without merging it, in the period; each close counts. A pull request that landed later is not counted. Maintenance pull requests are not counted."},
 	{Key: "maintenance", Label: "Maintenance",
-		Text: "Each GitHub review and close on someone else's maintenance pull request, and each merge of one, in the period. Maintenance pull requests are backports, dependency updates and pull requests a bot or a deleted account opened. Approval commands and comments on them are not counted. Not part of the total."},
+		Text: "Each review and close on someone else's maintenance pull request, and each merge of one, in the period. A review is a GitHub review or an approval command. Maintenance pull requests are backports, dependency updates and pull requests a bot or a deleted account opened. Other comments on them are not counted. Not part of the total."},
 	{Key: "authoring_weight", Label: "Authoring weight",
 		Text: "The size weights of the person's landed pull requests, added up. A pull request's size comes from its counted lines, as the size table shows; one whose files could not be collected adds nothing."},
 	{Key: "reviewing_weight", Label: "Reviewing weight",

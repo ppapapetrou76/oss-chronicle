@@ -15,7 +15,7 @@ Each number on the web page and in the run summary, and the sentence both show f
 | Comments | Conversation comments on someone else's pull request in the period; inline review comments belong to the review. Bot and merge commands are not counted, and approval commands count as reviews. Maintenance pull requests are not counted. |
 | Merges | Pull requests the person merged into the default branch in the period. When a bot merged, the credit goes to the person whose merge command it acted on, or with no command to the last person other than the author who approved. Maintenance pull requests are not counted. |
 | Triage | Closes of someone else's pull request without merging it, in the period; each close counts. A pull request that landed later is not counted. Maintenance pull requests are not counted. |
-| Maintenance | Each GitHub review and close on someone else's maintenance pull request, and each merge of one, in the period. Maintenance pull requests are backports, dependency updates and pull requests a bot or a deleted account opened. Approval commands and comments on them are not counted. Not part of the total. |
+| Maintenance | Each review and close on someone else's maintenance pull request, and each merge of one, in the period. A review is a GitHub review or an approval command. Maintenance pull requests are backports, dependency updates and pull requests a bot or a deleted account opened. Other comments on them are not counted. Not part of the total. |
 | Authoring weight | The size weights of the person's landed pull requests, added up. A pull request's size comes from its counted lines, as the size table shows; one whose files could not be collected adds nothing. |
 | Reviewing weight | The size weights of the pull requests the person reviewed, added up, with a weight multiplied when their review left feedback. A pull request whose files could not be collected adds nothing. |
 
@@ -60,7 +60,7 @@ Every activity that is not counted, apart from a bot's own comments and events, 
 - pull requests that never merged;
 - pull requests merged into a branch other than the default (stacked pull requests land later through their parent);
 - merges done by a bot with no merge command or approval to credit them to;
-- opening a backport or dependency pull request by hand, commits in maintenance pull requests, and comments on them. Reviews, merges and closes on maintenance pull requests are credited as maintenance instead, and the run summary marks those rows. A bot opening a pull request is not recorded, like the rest of a bot's own activity.
+- opening a backport or dependency pull request by hand, commits in maintenance pull requests, and comments on them other than approval commands. Reviews, approval commands, merges and closes on maintenance pull requests are credited as maintenance instead, and the run summary marks those rows. A bot opening a pull request is not recorded, like the rest of a bot's own activity.
 
 ## Merge workflows
 
