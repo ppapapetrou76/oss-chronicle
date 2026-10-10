@@ -55,6 +55,14 @@ See who reviews which components, and where reviews depend on one person:
 
 ![The review grid: reviews per person and component, darker cells for a larger share](docs/images/page-grid.png)
 
+Open "How each number is computed" under the people table for what each column counts:
+
+![How each number is computed: one entry per number in the people table](docs/images/page-definitions.png)
+
+The page ends with the rules the run counted with. Rules the project's config changed are marked "set by this project":
+
+![How it counts: the backport, dependency, bot, command, size and component rules the run used](docs/images/page-rules.png)
+
 The screenshots use real data with the repository name, logins, PR titles, PR numbers and two component names replaced by placeholders. The counts and dates are real.
 
 The action only reads. It never writes to the repository, comments or opens issues.
