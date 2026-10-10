@@ -174,6 +174,10 @@ func runAll(args []string, stdout io.Writer, now time.Time) error {
 		return err
 	}
 	periods := ledger.ComputePeriods(prs, cfg, plan, def)
+	gen := generator()
+	for _, p := range periods {
+		p.Ledger.Generator = &gen
+	}
 	res := *periods[def].Ledger
 
 	if err := os.MkdirAll(*outDir, 0o755); err != nil {
@@ -319,7 +323,9 @@ func runCompute(args []string, stdout io.Writer, now time.Time) error {
 	if err != nil {
 		return err
 	}
+	gen := generator()
 	res := ledger.Compute(prs, cfg, from, to)
+	res.Generator = &gen
 	var periods []ledger.PeriodLedger
 	if *periodsOut != "" {
 		plan, def, err := cfg.Plan(now)
@@ -328,6 +334,9 @@ func runCompute(args []string, stdout io.Writer, now time.Time) error {
 		}
 		plan, def = covered(plan, def, meta, os.Stderr)
 		periods = ledger.ComputePeriods(prs, cfg, plan, def)
+		for _, p := range periods {
+			p.Ledger.Generator = &gen
+		}
 		if err := writeFile(*periodsOut, func(w io.Writer) error { return writeJSON(w, periods) }); err != nil {
 			return err
 		}
@@ -441,6 +450,10 @@ func writeCSV(dir string, res ledger.Result, periods []ledger.PeriodLedger) erro
 		}
 	}
 	return nil
+}
+
+func generator() ledger.Generator {
+	return ledger.GeneratorFromActionPath(os.Getenv("OSS_CHRONICLE_ACTION_PATH"))
 }
 
 // githubServer is the GitHub web address links point to: GITHUB_SERVER_URL on Actions

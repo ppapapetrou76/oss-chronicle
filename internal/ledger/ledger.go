@@ -103,7 +103,8 @@ type Totals struct {
 	ReviewingWeight      float64 `json:"reviewing_weight"`
 }
 
-// Result is the ledger for one repository and window.
+// Result is the ledger for one repository and window. Rules are the counting rules the run
+// applied, and Generator the oss-chronicle version that computed it, when known.
 type Result struct {
 	Repository    string           `json:"repository"`
 	DefaultBranch string           `json:"default_branch"`
@@ -115,6 +116,8 @@ type Result struct {
 	People        []Person         `json:"people"`
 	Components    []ComponentStats `json:"components"`
 	Dropped       []Dropped        `json:"dropped"`
+	Rules         []Rule           `json:"rules,omitempty"`
+	Generator     *Generator       `json:"generator,omitempty"`
 }
 
 type reviewKey struct {
@@ -458,6 +461,7 @@ func (t *tally) result(cfg config.Config, n int) Result {
 	res := Result{
 		Repository:    cfg.Repository,
 		DefaultBranch: t.c.defaultBranch,
+		Rules:         rulesOf(cfg),
 		From:          t.from.Format(config.DateLayout),
 		To:            t.to.Format(config.DateLayout),
 		PullRequests:  n,

@@ -117,6 +117,7 @@ runs:
         INPUT_OUT_DIR: ${{ inputs.out-dir }}
         ARCHIVE_KEY: ${{ steps.archive.outputs.key }}
         ARCHIVE_DIR: ${{ runner.temp }}/oss-chronicle-archive-${{ inputs.artifact-name }}
+        OSS_CHRONICLE_ACTION_PATH: ${{ github.action_path }}
       run: |
         args=(run --config "$INPUT_CONFIG" --top "$INPUT_TOP" --out-dir "$INPUT_OUT_DIR")
         [[ -n "$INPUT_FROM" ]] && args+=(--from "$INPUT_FROM")

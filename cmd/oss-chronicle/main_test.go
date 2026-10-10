@@ -20,6 +20,7 @@ import (
 
 func TestComputeWritesLedgerJSON(t *testing.T) {
 	t.Setenv("GITHUB_REPOSITORY", "o/r")
+	t.Setenv("OSS_CHRONICLE_ACTION_PATH", "/home/runner/work/_actions/me/fork/v3")
 	dir := t.TempDir()
 	data := filepath.Join(dir, "prs.jsonl")
 	line := `{"number":1,"title":"fix: x","state":"MERGED","createdAt":"2026-07-15T08:00:00Z","mergedAt":"2026-07-16T08:00:00Z","author":{"login":"alice"},"baseRefName":"main","headRefName":"fix","timelineItems":{"nodes":[{"__typename":"MergedEvent","createdAt":"2026-07-16T08:00:00Z","actor":{"login":"bob"}}]}}` + "\n"
@@ -38,6 +39,9 @@ func TestComputeWritesLedgerJSON(t *testing.T) {
 	}
 	if res.Repository != "o/r" || res.Totals.Landed != 1 || res.Totals.Merged != 1 {
 		t.Errorf("ledger = %s %+v", res.Repository, res.Totals)
+	}
+	if res.Generator == nil || *res.Generator != (ledger.Generator{Repository: "me/fork", Ref: "v3"}) || len(res.Rules) == 0 {
+		t.Errorf("generator = %+v, %d rules", res.Generator, len(res.Rules))
 	}
 	people, err := os.ReadFile(filepath.Join(csvDir, "people.csv"))
 	if err != nil || !strings.Contains(string(people), "\n1,alice,1,1,") {

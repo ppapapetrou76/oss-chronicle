@@ -31,12 +31,23 @@ func TestMarkdown(t *testing.T) {
 			{Reason: ledger.ForcePushes, Label: "Force-pushes", Count: 799},
 			{Reason: ledger.MaintenanceMerges, Label: "Merges of backport PRs", Count: 3, Maintenance: true},
 		},
+		Rules: []ledger.Rule{
+			{Label: "Merge commands", Values: []string{"/merge", "@bors r+", "[x](https://evil.example)"}, Custom: true},
+			{Label: "Bots: login is", Values: []string{}},
+			{Label: "Reviewing weight multiplier for a review with feedback", Values: []string{"2"}},
+		},
+		Generator: &ledger.Generator{Repository: "me/fork", Ref: "v2"},
 	}
 	var b strings.Builder
 	if err := Markdown(&b, res, 1, "https://github.com/"); err != nil {
 		t.Fatal(err)
 	}
 	out := b.String()
+	for _, u := range ledger.Units {
+		if want := "- **" + u.Label + "**: " + u.Text + "\n"; !strings.Contains(out, want) {
+			t.Errorf("summary missing the %s definition", u.Label)
+		}
+	}
 	for _, want := range []string{
 		"## Contribution ledger: o/r",
 		"2,170 pull requests",
@@ -47,7 +58,11 @@ func TestMarkdown(t *testing.T) {
 		"| XS | 0–10 | 0.5 | 3 |",
 		"| L | over 10 | 3 | 2 |",
 		"25% of the lines changed",
-		"multiplied by 2 when",
+		"<details><summary>How each number is computed</summary>",
+		"- **Merge commands**: /merge, @\u2060bors r+, \\[x\\]\\(https://evil.example\\) *(set by this project)*\n",
+		"- **Bots: login is**: none\n",
+		"- **Reviewing weight multiplier for a review with feedback**: 2\n",
+		"[How it counts](https://github.com/me/fork/blob/v2/docs/how-it-counts.md)",
 		"1 landed PRs have no file data",
 		"| Force-pushes | 799 |",
 		"Merges of backport PRs (credited as maintenance)",

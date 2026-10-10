@@ -2,6 +2,7 @@ package page
 
 import (
 	"encoding/json"
+	"html"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -229,5 +230,56 @@ console.log(L.totals.landed + " " + L.components[0].waiting.length);`
 		if got := strings.TrimSpace(string(out)); got != want {
 			t.Errorf("query %q: landed and waiting = %q, want %q", query, got, want)
 		}
+	}
+}
+
+func TestRenderExplainsEveryNumberAndRule(t *testing.T) {
+	res := ledger.Result{
+		Repository: "o/r",
+		Rules: []ledger.Rule{
+			{Label: "Merge commands", Values: []string{"/merge", "<img src=x onerror=alert(1)>"}, Custom: true},
+			{Label: "Bots: login is", Values: []string{}},
+		},
+		Generator: &ledger.Generator{Repository: "me/fork", Ref: "v2"},
+	}
+	other := res
+	periods := []ledger.PeriodLedger{{ID: "90d", Default: true, Ledger: &res}, {ID: "30d", Ledger: &other}}
+	var b strings.Builder
+	if err := Render(&b, res, periods, "", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	out := b.String()
+	escape := func(s string) string { return strings.ReplaceAll(html.EscapeString(s), "+", "&#43;") }
+	for _, u := range ledger.Units {
+		if !strings.Contains(out, "<dt>"+escape(u.Label)+"</dt><dd>"+escape(u.Text)+"</dd>") {
+			t.Errorf("page has no definition of %s", u.Label)
+		}
+		if u.Key != "reviewed_with_feedback" && !strings.Contains(out, `label: "`+u.Label+`"`) {
+			t.Errorf("no people table column labelled %q, the label its definition uses", u.Label)
+		}
+	}
+	for _, want := range []string{
+		`<li><b>Merge commands</b>: /merge, &lt;img src=x onerror=alert(1)&gt; <span class="tag">set by this project</span></li>`,
+		`<li><b>Bots: login is</b>: none</li>`,
+		`href="https://github.com/me/fork/blob/v2/docs/how-it-counts.md"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("page missing %s", want)
+		}
+	}
+	if strings.Contains(out, "<img src=x") {
+		t.Error("a rule value was not escaped")
+	}
+	pm := regexp.MustCompile(`(?s)<script type="application/json" id="periods-data">(.*?)</script>`).FindStringSubmatch(out)
+	if pm == nil || strings.Contains(pm[1], "Merge commands") || strings.Contains(pm[1], "me/fork") {
+		t.Error("the other periods' copies of the rules and generator should be dropped from the page")
+	}
+
+	b.Reset()
+	if err := Render(&b, ledger.Result{Repository: "o/r"}, nil, "", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if out := b.String(); !strings.Contains(out, "does not record its rules") || !strings.Contains(out, ledger.DefaultGenerator.DocsURL()) {
+		t.Error("a ledger from an older version should say it has no rules and link to the default docs")
 	}
 }

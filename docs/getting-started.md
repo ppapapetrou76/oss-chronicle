@@ -50,6 +50,7 @@ Open the finished run. Its summary page shows:
 - **Components**: per area of the code, the PRs landed, authors and reviewers, the top reviewer's share, response and merge times, and how many PRs wait for a response.
 - **Waiting for a first response**: the oldest 10 open PRs that nobody but their author has responded to.
 - **Left out**: every kind of activity that was not counted, or was counted only as maintenance, with how much of it there was.
+- **How each number is computed**, folded: one sentence per number, and the rules the run counted with, marked where your config changed them.
 
 > [!WARNING]
 > On a public repository, anyone can open the Actions tab, so this summary is public from the first run. Read [Before you publish](publishing.md#before-you-publish) before you add the workflow.
@@ -60,7 +61,7 @@ Each run also uploads an artifact called `oss-chronicle`, at the bottom of the r
 
 | File | What it is |
 |---|---|
-| `site/index.html` | The web page: a period picker, sortable tables, a breakdown per person and per component, a person × component review grid, PR sizes and the left-out activity. Open it in a browser; it loads nothing from other sites. |
+| `site/index.html` | The web page: a period picker, sortable tables, a breakdown per person and per component, a person × component review grid, PR sizes, the left-out activity, and how each number is computed with the rules the run used. Open it in a browser; it loads nothing from other sites. |
 | `ledger.json` | Everything the summary shows, for the default period, as JSON. |
 | `periods.json` | The same for every period: the last 7, 30, 90, 180 and 365 days, last month, last quarter and last year by default. See [Periods](configuration.md#periods). |
 | `summary.md` | The run summary as Markdown. |

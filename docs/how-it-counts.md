@@ -4,16 +4,24 @@ oss-chronicle counts finished work: one credit per pull request landed, per pull
 
 ## What counts
 
-| Unit | Credit |
-|---|---|
-| PRs landed | One per pull request that landed on the default branch, to its author: merged with the button or a merge queue, or closed by the commit that landed it (ghstack, mirror workflows). Replaces every commit, rebase and reply behind it. |
-| PRs reviewed | One per reviewer per pull request, on someone else's pull request: a GitHub review, or an approval command such as `/lgtm`, `/approve` or `@bors r+`. Tracks separately whether the review left feedback. |
-| Comments | Conversation comments on someone else's pull request, excluding bot commands. |
-| Merges | The maintainer who merged. When a bot merged (Prow, bors, merge bots), the person whose merge command it acted on; with no merge command, the last person other than the author who approved before the merge, by approval command or approving review. The "closed" event from the same click is not counted. |
-| Triage closes | Closing someone else's pull request without merging it. |
-| Maintenance | Reviews and closes on someone else's maintenance pull request, and merges of any: dependency bumps, backports, and any other pull request a bot opened. Shown separately, outside the total. Opening one, its commits and comments on it are not credited. |
+Each number on the web page and in the run summary, and the sentence both show for it:
 
-The total is PRs landed + PRs reviewed + comments + merges + triage closes, and it sets the default order.
+| Number | How it is computed |
+|---|---|
+| Total | Landed + reviewed + comments + merges + triage. Maintenance and the weights are shown beside it and are not part of it. |
+| Landed | Pull requests the person opened that landed on the default branch in the period: merged, or closed by the commit that landed them. One credit per pull request, replacing the commits, rebases and replies behind it. Maintenance pull requests are not counted. |
+| Reviewed | Someone else's pull requests the person reviewed in the period, once per pull request however many reviews they left. A review is a GitHub review or an approval command. Maintenance pull requests are not counted. |
+| Reviews with feedback | Reviewed pull requests where one of the person's reviews requested changes, left inline comments or had a written message. |
+| Comments | Conversation comments on someone else's pull request in the period; inline review comments belong to the review. Bot and merge commands are not counted, and approval commands count as reviews. Maintenance pull requests are not counted. |
+| Merges | Pull requests the person merged into the default branch in the period. When a bot merged, the credit goes to the person whose merge command it acted on, or with no command to the last person other than the author who approved. Maintenance pull requests are not counted. |
+| Triage | Closes of someone else's pull request without merging it, in the period; each close counts. A pull request that landed later is not counted. Maintenance pull requests are not counted. |
+| Maintenance | Each GitHub review and close on someone else's maintenance pull request, and each merge of one, in the period. Maintenance pull requests are backports, dependency updates and pull requests a bot or a deleted account opened. Approval commands and comments on them are not counted. Not part of the total. |
+| Authoring weight | The size weights of the person's landed pull requests, added up. A pull request's size comes from its counted lines, as the size table shows; one whose files could not be collected adds nothing. |
+| Reviewing weight | The size weights of the pull requests the person reviewed, added up, with a weight multiplied when their review left feedback. A pull request whose files could not be collected adds nothing. |
+
+The total sets the default order. A pull request closed by the commit that landed it counts as landed, which covers ghstack and mirror workflows. How each merge workflow is credited, from Prow to merge queues, is under [Merge workflows](#merge-workflows).
+
+The web page and the run summary also list the rules the run counted with: which pull requests are backports or dependency updates, which accounts are bots, the approval, merge and bot commands, what counted lines leave out, the size buckets, the reviewing weight multiplier, and how files map to components. Rules the config sets differently from the defaults are marked "set by this project". Opted-out logins are never listed. Both link here, to the docs for the oss-chronicle version that computed the ledger; a workflow that uses `@main` gets `main`.
 
 Activity is filtered by its own date, so a review on the day before the window does not count, even when the pull request merged inside it. The same rule gives every [period](configuration.md#periods) its own ledger from one collection.
 

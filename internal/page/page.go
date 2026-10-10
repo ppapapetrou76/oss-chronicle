@@ -46,14 +46,16 @@ func Render(w io.Writer, res ledger.Result, periods []ledger.PeriodLedger, serve
 	return tmpl.Execute(w, struct {
 		Ledger    ledger.Result
 		Periods   []ledger.PeriodLedger
+		Units     []ledger.Unit
 		ServerURL string
 		Generated string
-	}{res, embedded, server(serverURL), generated.UTC().Format("2006-01-02 15:04 UTC")})
+	}{res, embedded, ledger.Units, server(serverURL), generated.UTC().Format("2006-01-02 15:04 UTC")})
 }
 
-// withoutWaiting copies res without its waiting lists, which are the same in every period;
-// the page takes them from the default ledger.
+// withoutWaiting copies res without its waiting lists, which are the same in every period,
+// and without its rules and generator, which the page shows only from the default ledger.
 func withoutWaiting(res ledger.Result) *ledger.Result {
+	res.Rules, res.Generator = nil, nil
 	comps := make([]ledger.ComponentStats, len(res.Components))
 	for i, c := range res.Components {
 		c.Waiting = nil

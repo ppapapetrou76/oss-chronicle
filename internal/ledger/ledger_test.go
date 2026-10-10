@@ -186,6 +186,32 @@ func TestBotOpenedPRActivityGoesToMaintenance(t *testing.T) {
 	}
 }
 
+func TestMaintenanceCountsEachActionButNotApprovalCommands(t *testing.T) {
+	deps := func(p *store.PullRequest) { p.Title = "chore(deps): bump x" }
+	_, people, _ := compute(t,
+		pr(1, "dependabot", deps,
+			review("dave", "COMMENTED", inside, 1, ""),
+			review("dave", "COMMENTED", inside, 1, ""),
+			review("dave", "APPROVED", inside, 0, ""),
+			comment("carol", "/lgtm", inside)))
+	if p := people["dave"]; p.Maintenance != 3 || p.Reviewed != 0 {
+		t.Errorf("dave = %+v, want each of the 3 reviews as maintenance", p)
+	}
+	if _, ok := people["carol"]; ok {
+		t.Errorf("carol = %+v, want an approval command on a maintenance PR left out", people["carol"])
+	}
+}
+
+func TestTriageCountsEachClose(t *testing.T) {
+	closed := func(p *store.PullRequest) { p.State = "CLOSED" }
+	_, people, _ := compute(t,
+		pr(1, "alice", closed, event(store.ClosedEvent, "bob", ""), event(store.ClosedEvent, "bob", "")),
+		pr(2, "alice", event(store.ClosedEvent, "bob", ""), mergedBy("carol")))
+	if got := people["bob"].Triaged; got != 2 {
+		t.Errorf("bob triaged = %d, want both closes of the PR that never landed, and not the one that landed later", got)
+	}
+}
+
 func TestCommitsCountByTheirOwnDate(t *testing.T) {
 	dated := func(when time.Time) func(*store.PullRequest) {
 		return func(p *store.PullRequest) { p.Commits.Nodes[len(p.Commits.Nodes)-1].Commit.AuthoredDate = when }
