@@ -1,0 +1,140 @@
+name: oss-chronicle
+description: Count the contributions behind the repository the workflow runs in, leaving out activity that is not new work and saying why.
+author: ppapapetrou76
+branding:
+  icon: bar-chart-2
+  color: blue
+
+inputs:
+  token:
+    description: Token used to read pull requests. The default job token is enough.
+    default: ${{ github.token }}
+  config:
+    description: Path to the config file. Defaults apply when it does not exist (check out the repository to use one).
+    default: .github/oss-chronicle.yaml
+  from:
+    description: First day counted (YYYY-MM-DD). Overrides the config window.
+    default: ''
+  to:
+    description: Last day counted (YYYY-MM-DD, or now for the day of the run). Overrides the config window.
+    default: ''
+  periods:
+    description: Periods to compute, separated by commas, such as 30d,90d,last-year. Replaces the config's list; none computes the window alone. Date ranges are set in the config file.
+    default: ''
+  top:
+    description: People listed in the run summary.
+    default: '25'
+  out-dir:
+    description: Directory for prs.jsonl.gz, meta.json, ledger.json, periods.json, summary.md, csv/ and site/.
+    default: oss-chronicle
+  upload-artifact:
+    description: Upload the output directory as a workflow artifact.
+    default: 'true'
+  artifact-name:
+    description: Artifact name. Must be unique within a workflow run, so set it when the action runs more than once.
+    default: oss-chronicle
+  archive:
+    description: Keep last year's pull requests in the Actions cache, so later runs that month fetch only the rest. Set to false to fetch everything on every run.
+    default: 'true'
+
+outputs:
+  ledger:
+    description: Path to ledger.json.
+    value: ${{ steps.run.outputs.ledger }}
+  periods:
+    description: Path to periods.json, the ledger for every configured period (7, 30, 90, 180 and 365 days, last month, quarter and year by default).
+    value: ${{ steps.run.outputs.periods }}
+  summary:
+    description: Path to summary.md.
+    value: ${{ steps.run.outputs.summary }}
+  data:
+    description: Path to the collected pull request data (prs.jsonl.gz).
+    value: ${{ steps.run.outputs.data }}
+  meta:
+    description: Path to meta.json (default branch, .gitattributes and CODEOWNERS), which compute needs to reproduce the ledger.
+    value: ${{ steps.run.outputs.meta }}
+  site:
+    description: Directory holding the static web page (index.html and ledger.json), ready for actions/upload-pages-artifact.
+    value: ${{ steps.run.outputs.site }}
+  archive:
+    description: used when last year's pull requests came from the Actions cache, written when this run collected and cached them, empty when no archive applies.
+    value: ${{ steps.run.outputs.archive }}
+  csv:
+    description: Directory holding the CSV tables (people, components, person_component, waiting, left_out).
+    value: ${{ steps.run.outputs.csv }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v7
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+
+    - name: Build oss-chronicle
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        GOFLAGS: ''
+        CGO_ENABLED: '0'
+      run: go build -trimpath -o "$RUNNER_TEMP/oss-chronicle" ./cmd/oss-chronicle
+
+    - name: Find last year's archive
+      id: archive
+      if: inputs.archive == 'true'
+      shell: bash
+      env:
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_FROM: ${{ inputs.from }}
+        INPUT_TO: ${{ inputs.to }}
+        INPUT_PERIODS: ${{ inputs.periods }}
+      run: |
+        args=(archive-key --config "$INPUT_CONFIG")
+        [[ -n "$INPUT_FROM" ]] && args+=(--from "$INPUT_FROM")
+        [[ -n "$INPUT_TO" ]] && args+=(--to "$INPUT_TO")
+        [[ -n "$INPUT_PERIODS" ]] && args+=(--periods "$INPUT_PERIODS")
+        key=$("$RUNNER_TEMP/oss-chronicle" "${args[@]}")
+        echo "key=$key" >> "$GITHUB_OUTPUT"
+
+    - name: Restore last year's archive
+      id: restore
+      if: steps.archive.outputs.key != ''
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/oss-chronicle-archive-${{ inputs.artifact-name }}
+        key: ${{ steps.archive.outputs.key }}
+
+    - name: Count contributions
+      id: run
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_FROM: ${{ inputs.from }}
+        INPUT_TO: ${{ inputs.to }}
+        INPUT_TOP: ${{ inputs.top }}
+        INPUT_PERIODS: ${{ inputs.periods }}
+        INPUT_OUT_DIR: ${{ inputs.out-dir }}
+        ARCHIVE_KEY: ${{ steps.archive.outputs.key }}
+        ARCHIVE_DIR: ${{ runner.temp }}/oss-chronicle-archive-${{ inputs.artifact-name }}
+      run: |
+        args=(run --config "$INPUT_CONFIG" --top "$INPUT_TOP" --out-dir "$INPUT_OUT_DIR")
+        [[ -n "$INPUT_FROM" ]] && args+=(--from "$INPUT_FROM")
+        [[ -n "$INPUT_TO" ]] && args+=(--to "$INPUT_TO")
+        [[ -n "$INPUT_PERIODS" ]] && args+=(--periods "$INPUT_PERIODS")
+        [[ -n "$ARCHIVE_KEY" ]] && args+=(--archive "$ARCHIVE_DIR")
+        "$RUNNER_TEMP/oss-chronicle" "${args[@]}"
+
+    - name: Save last year's archive
+      if: steps.run.outputs.archive == 'written'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ runner.temp }}/oss-chronicle-archive-${{ inputs.artifact-name }}
+        key: ${{ steps.run.outputs.archive-key }}
+
+    - if: inputs.upload-artifact == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.out-dir }}
+        if-no-files-found: error

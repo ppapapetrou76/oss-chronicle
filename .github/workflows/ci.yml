@@ -1,0 +1,72 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+      - id: ledger
+        uses: ./
+        with:
+          config: none.yaml
+          upload-artifact: 'false'
+      - run: jq -e '.repository == env.GITHUB_REPOSITORY and (.default_branch | length > 0) and (.components | type == "array")' "$LEDGER"
+        env:
+          LEDGER: ${{ steps.ledger.outputs.ledger }}
+      - run: grep -q 'id="ledger-data"' "$SITE/index.html" && jq -e .repository "$SITE/ledger.json"
+        env:
+          SITE: ${{ steps.ledger.outputs.site }}
+      - run: head -1 "$CSV/people.csv" | grep -q '^rank,login,total,' && ls "$CSV"/{people,components,person_component,waiting,left_out}.csv
+        env:
+          CSV: ${{ steps.ledger.outputs.csv }}
+      - run: jq -e 'length == 8 and ([.[] | select(.default)] | length == 1) and ([.[].id] | index("last-year") != null) and all(.[]; .ledger.repository == env.GITHUB_REPOSITORY)' "$PERIODS" && grep -q 'id="periods-data"' "$SITE/index.html" && ls "$CSV"/periods/last-year/people.csv
+        env:
+          PERIODS: ${{ steps.ledger.outputs.periods }}
+          SITE: ${{ steps.ledger.outputs.site }}
+          CSV: ${{ steps.ledger.outputs.csv }}
+      - run: '[[ "$ARCHIVE" == used || "$ARCHIVE" == written ]]'
+        env:
+          ARCHIVE: ${{ steps.ledger.outputs.archive }}
+      - run: rm -rf "$RUNNER_TEMP"/oss-chronicle-archive-*
+      - id: again
+        uses: ./
+        with:
+          config: none.yaml
+          upload-artifact: 'false'
+          out-dir: oss-chronicle-again
+      - run: '[[ "$ARCHIVE" == used ]] && cmp <(jq -c "[.[].ledger.totals]" "$FIRST") <(jq -c "[.[].ledger.totals]" "$AGAIN")'
+        env:
+          ARCHIVE: ${{ steps.again.outputs.archive }}
+          FIRST: ${{ steps.ledger.outputs.periods }}
+          AGAIN: ${{ steps.again.outputs.periods }}
+      - id: picked
+        uses: ./
+        with:
+          config: none.yaml
+          upload-artifact: 'false'
+          out-dir: oss-chronicle-picked
+          periods: 30d, last-month
+          to: now
+          archive: 'false'
+      - run: jq -e '[.[].id] == ["90d", "30d", "last-month"]' "$PERIODS"
+        env:
+          PERIODS: ${{ steps.picked.outputs.periods }}
