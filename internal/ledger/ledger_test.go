@@ -580,6 +580,7 @@ func component(res Result, name string) ComponentStats {
 
 func TestComponentMapping(t *testing.T) {
 	cfg := withComponents(config.Component{Name: "UI", Paths: []string{"/ui/"}})
+	cfg.Components.UseCodeowners = true
 	cfg.Components.Codeowners = "** @org/all\n/docs/ @org/all @org/docs\n"
 	m := newMapper(cfg.Components, nil)
 	tests := map[string]string{
@@ -599,8 +600,17 @@ func TestComponentMapping(t *testing.T) {
 	}
 }
 
+func TestDefaultComponentsAreTopLevelDirectories(t *testing.T) {
+	cfg := withComponents()
+	cfg.Components.Codeowners = "/ui/ @org/ui-approvers\n"
+	if got := newMapper(cfg.Components, nil).component("ui/src/app.tsx"); got != "ui" {
+		t.Errorf("by default ui/src/app.tsx = %q, want its directory ui, not its CODEOWNERS owners", got)
+	}
+}
+
 func TestOptOutOwnersAreLeftOutOfComponentNames(t *testing.T) {
 	cfg := withComponents()
+	cfg.Components.UseCodeowners = true
 	cfg.Components.Codeowners = "* @bob\n/api/ @Alice @bob\n/cli/ @alice\n/ui/ @org/ui @alice\n"
 	cfg.Publish.OptOut = []string{"ALICE"}
 	res, _, _ := computeWith(t, cfg,

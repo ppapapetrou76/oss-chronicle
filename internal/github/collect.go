@@ -228,7 +228,7 @@ func (c *Client) repoInfo(ctx context.Context, col *Collection, owner, name, rep
 		b    *blob
 	}{{".github/CODEOWNERS", r.CodeownersGithub}, {"CODEOWNERS", r.CodeownersRoot}, {"docs/CODEOWNERS", r.CodeownersDocs}} {
 		if f.b != nil {
-			col.Codeowners = f.b.read(c.Log, f.path, "components fall back to top-level directories")
+			col.Codeowners = f.b.read(c.Log, f.path, "use_codeowners cannot name components after it")
 			break
 		}
 	}

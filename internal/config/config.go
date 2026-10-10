@@ -159,7 +159,6 @@ func Default() Config {
 			TestWeight:       1,
 			ReviewFeedback:   2,
 		},
-		Components: Components{UseCodeowners: true},
 		PullRequests: PullRequests{
 			Backport: Backport{
 				HeadPrefixes: []string{"cherry-pick", "backport", "automated-cherry-pick-of-", "mergify/bp/"},

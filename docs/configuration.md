@@ -74,7 +74,7 @@ size:
   test_weight: 1                   # multiplier for lines in test files
   review_feedback_multiplier: 2
 components:
-  use_codeowners: true             # fall back to CODEOWNERS owners for files no map entry matches
+  use_codeowners: false            # name files no map entry matches after their CODEOWNERS owners
   map:                             # example; empty by default, see Components below
     - {name: UI, paths: [/ui/]}
     - {name: API server, paths: [/server/, /pkg/apiclient/]}
@@ -165,14 +165,13 @@ or run once with `archive: false`, which neither reads nor writes it.
 A changed file gets its component from the first rule that applies:
 
 1. **`components.map`**: the first entry with a path matching the file. Paths are `.gitignore`-style patterns.
-2. **`CODEOWNERS`**, when `use_codeowners` is on: the file's owners become the component name.
+2. **`CODEOWNERS`**, when `use_codeowners` is on (it is off by default): the file's owners become the component name.
 3. **The top-level directory** the file is in, or `(root files)` for files at the top.
 
 Order matters. In this example `/controller/hydrator/` belongs to Source hydrator, because that entry comes before Application controller, whose `/controller/` also matches:
 
 ```yaml
 components:
-  use_codeowners: false
   map:
     - {name: Source hydrator, paths: [/commitserver/, /controller/hydrator/, "*hydrator*"]}
     - {name: Application controller, paths: [/controller/]}
@@ -181,13 +180,13 @@ components:
     - {name: Shared libraries, paths: ["**"]}
 ```
 
-A last entry of `"**"` catches every file the others miss. Without it, those files fall back to `CODEOWNERS` and then to their folder.
+A last entry of `"**"` catches every file the others miss. Without it, those files fall back to their folder, or first to `CODEOWNERS` when `use_codeowners` is on.
 
-Without a map, the components follow your `CODEOWNERS`. That reads well when it assigns paths to teams (`@org/ui`), and less well when it lists individual people, since the component is then named after them.
+Without a map, the components are your top-level directories. `use_codeowners: true` names files after their `CODEOWNERS` owners instead; files only a catch-all rule such as `*` matches still go by their folder, so the list can mix owners and folders. Owners are teams or people, not areas of the code, so turn it on only when each team is named after the one area it owns, such as `@org/ui`. Owners named after approver groups or people, and files with several owners, give component names like `@org/approvers-cli @org/approvers-docs`; a components map is the better fix there.
 
 ## Opting people out
 
-Logins in `publish.opt_out` are left out of the run summary, the web page, the CSV files and `ledger.json`, including the per-component reviewer lists. They are also removed from component names taken from `CODEOWNERS`: files owned by `@alice @bob` belong to `@bob` once Alice opts out, and files only she owns fall back to their top-level directory. Their activity still counts in the totals. See [Before you publish](publishing.md#before-you-publish) for what opt-out does and does not cover.
+Logins in `publish.opt_out` are left out of the run summary, the web page, the CSV files and `ledger.json`, including the per-component reviewer lists. When `use_codeowners` is on, they are also removed from component names taken from `CODEOWNERS`: files owned by `@alice @bob` belong to `@bob` once Alice opts out, and files only she owns fall back to their top-level directory. Their activity still counts in the totals. See [Before you publish](publishing.md#before-you-publish) for what opt-out does and does not cover.
 
 ## Run it locally
 

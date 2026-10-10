@@ -28,7 +28,7 @@ jobs:
 
 The action only reads. It never writes to the repository, and it never comments, labels or opens issues. The default job token is enough to read the repository the workflow runs in.
 
-Without a config file, the defaults apply: the last 90 days, the usual bots and dependency updaters, and components named after your `CODEOWNERS` owners or your top-level directories. You can add a config later (see [Configuration](configuration.md)).
+Without a config file, the defaults apply: the last 90 days, the usual bots and dependency updaters, and components named after your top-level directories. You can add a config later (see [Configuration](configuration.md)).
 
 ## 2. Run it
 
@@ -101,7 +101,7 @@ Put the config in `.github/oss-chronicle.yaml`. The workflow above already check
 | A later step in the same job uses the wrong Go version | The action builds itself with `actions/setup-go`, which leaves its Go on the `PATH`. Run it in its own job. |
 | "still rate limited after 10 waits" | Another workflow is using the same token heavily. Run at a quieter time, or pass a token with its own rate limit. |
 | The config seems ignored | Check that the job checks out the repository before the action runs, and that the file is at `.github/oss-chronicle.yaml` or wherever the `config` input points. Unknown keys fail the run, so a typo in a key shows up as an error. |
-| A component is called something like `@alice @bob` | Your `CODEOWNERS` lists individual people for those paths. Add a [components map](configuration.md#components). |
+| A component is called something like `@alice @bob` or `@org/approvers` | `use_codeowners` is on and your `CODEOWNERS` names people or approver groups, not areas. Turn it off, or add a [components map](configuration.md#components). |
 | The upload fails because the artifact name exists | Two steps in the run use the same `artifact-name`. Give each its own. |
 | "GitHub Actions is not permitted to create or approve pull requests" | The [Read the Docs recipe](publishing.md#docs-built-outside-github-actions-read-the-docs-netlify) needs **Settings › Actions › General › Allow GitHub Actions to create and approve pull requests** turned on. The branch was pushed; once the setting is on, run the workflow again to open the pull request. |
 | You want the next run to collect everything again, such as after a contributor renamed their account | Delete the `oss-chronicle-…` entry under **Actions → Caches**, or run once with `archive: false`. See [Finding and clearing it](configuration.md#finding-and-clearing-it). |

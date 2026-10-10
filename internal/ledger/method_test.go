@@ -53,11 +53,20 @@ func TestDefaultRulesAreNotMarkedCustom(t *testing.T) {
 	if v := m["Left out of counted lines"].Values; len(v) != 2 || v[0] != builtinExclusions {
 		t.Errorf("exclusions = %v", v)
 	}
-	if v := m["Components, first match wins"].Values; strings.Join(v, ",") != "CODEOWNERS,the top-level directory" {
+	if v := m["Components, first match wins"].Values; strings.Join(v, ",") != "the top-level directory" {
 		t.Errorf("components = %v", v)
 	}
 	if v := m["Counted lines"].Values; strings.Join(v, ",") != "additions + 1 × deletions" {
 		t.Errorf("counted lines = %v", v)
+	}
+}
+
+func TestRulesShowCodeownersWhenTheProjectTurnsItOn(t *testing.T) {
+	cfg := config.Default()
+	cfg.Components.UseCodeowners = true
+	r := rulesByLabel(rulesOf(cfg))["Components, first match wins"]
+	if !r.Custom || strings.Join(r.Values, ",") != "CODEOWNERS,the top-level directory" {
+		t.Errorf("components rule = %+v, want CODEOWNERS listed and marked as set by the project", r)
 	}
 }
 

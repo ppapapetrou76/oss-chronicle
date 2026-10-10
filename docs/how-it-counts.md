@@ -38,7 +38,7 @@ Counted lines leave out lock files, vendored code, common generated files, and a
 
 ## Components
 
-Each file belongs to a component: the first [components map](configuration.md#components) entry whose paths match it, then its owners in `CODEOWNERS`, then its top-level directory. A pull request belongs to the component where most of its counted lines changed, so nothing is counted twice; every other component it changed lists it as touched. Rules in `CODEOWNERS` that match every file are ignored, and so are their owners when naming the others; only `@user` and `@org/team` owners are read. `CODEOWNERS` is read from `.github/`, the repository root or `docs/`, whichever comes first.
+Each file belongs to a component: the first [components map](configuration.md#components) entry whose paths match it, then, when `use_codeowners` is on, its owners in `CODEOWNERS`, then its top-level directory. A pull request belongs to the component where most of its counted lines changed, so nothing is counted twice; every other component it changed lists it as touched. Rules in `CODEOWNERS` that match every file are ignored, and so are their owners when naming the others; only `@user` and `@org/team` owners are read. `CODEOWNERS` is read from `.github/`, the repository root or `docs/`, whichever comes first.
 
 For each component, the run summary and `ledger.json` give:
 
