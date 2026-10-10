@@ -195,7 +195,9 @@ if (PERIODS.length > 1) {
 }
 
 const definitions = document.getElementById("definitions");
-if (location.hash === "#definitions") definitions.open = true;
+const openDefinitions = () => { if (location.hash === "#definitions") definitions.open = true; };
+openDefinitions();
+window.addEventListener("hashchange", openDefinitions);
 document.getElementById("definitions-link").addEventListener("click", () => { definitions.open = true; });
 
 const t = L.totals;

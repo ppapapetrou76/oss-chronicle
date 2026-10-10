@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -229,6 +230,48 @@ console.log(L.totals.landed + " " + L.components[0].waiting.length);`
 		}
 		if got := strings.TrimSpace(string(out)); got != want {
 			t.Errorf("query %q: landed and waiting = %q, want %q", query, got, want)
+		}
+	}
+}
+
+func TestPageOpensDefinitionsFromTheAddress(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node not installed")
+	}
+	res := ledger.Result{Repository: "o/r"}
+	var page strings.Builder
+	if err := Render(&page, res, []ledger.PeriodLedger{{ID: "90d", Default: true, Ledger: &res}}, "", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`(?s)\n(const definitions = .*?)\n\n`).FindStringSubmatch(page.String())
+	if m == nil {
+		t.Fatal("no definitions code in page script")
+	}
+	for _, tc := range []struct {
+		name, steps string
+		want        bool
+	}{
+		{"loaded with the hash", `location.hash = "#definitions"; run();`, true},
+		{"loaded without the hash", `run();`, false},
+		{"hash set after loading", `run(); location.hash = "#definitions"; onWindow.hashchange?.();`, true},
+		{"other hash set after loading", `run(); location.hash = "#people"; onWindow.hashchange?.();`, false},
+		{"link clicked", `run(); onLink.click?.();`, true},
+	} {
+		probe := `const onWindow = {}, onLink = {};
+const elements = {"definitions": {open: false}, "definitions-link": {addEventListener: (e, f) => { onLink[e] = f; }}};
+const document = {getElementById: id => elements[id]};
+const window = {addEventListener: (e, f) => { onWindow[e] = f; }};
+const location = {hash: ""};
+const run = () => { ` + m[1] + ` };
+` + tc.steps + `
+console.log(elements.definitions.open);`
+		out, err := exec.Command(node, "-e", probe).CombinedOutput()
+		if err != nil {
+			t.Fatalf("%s: %v\n%s", tc.name, err, out)
+		}
+		if got := strings.TrimSpace(string(out)); got != strconv.FormatBool(tc.want) {
+			t.Errorf("%s: definitions open = %s, want %t", tc.name, got, tc.want)
 		}
 	}
 }
